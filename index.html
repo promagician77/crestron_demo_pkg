@@ -1,0 +1,711 @@
+<title>Crestron Home Control</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap">
+
+<style>
+:root {
+  --bg:        #0a0c10;
+  --surface:   #111419;
+  --surface2:  #191d24;
+  --surface3:  #1e232c;
+  --border:    #252b35;
+  --fg:        #e8edf3;
+  --fg2:       #7a8899;
+  --fg3:       #3d4a58;
+  --gold:      #c9a84c;
+  --gold-dim:  #7a5f24;
+  --gold-bg:   #1a1508;
+  --blue:      #3b82f6;
+  --blue-dim:  #1e3a6e;
+  --blue-bg:   #0d1a2e;
+  --green:     #22c55e;
+  --green-dim: #14532d;
+  --red:       #ef4444;
+  --amber:     #f59e0b;
+  --font-h:    'Rajdhani', sans-serif;
+  --font-b:    'Inter', sans-serif;
+}
+
+/* intentionally dark-only — this IS a dark panel UI */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-b);
+  background: var(--bg);
+  color: var(--fg);
+  min-height: 100vh;
+  padding-inline: 16px;
+  padding-block: 20px;
+}
+
+/* ── Header bar ── */
+.topbar {
+  max-width: 880px; margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-logo {
+  width: 36px; height: 36px; border-radius: 6px;
+  background: linear-gradient(135deg, #c9a84c 0%, #8b5e1a 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-h); font-size: 14px; font-weight: 700; color: #fff;
+  letter-spacing: .04em;
+}
+.brand-name { font-family: var(--font-h); font-size: 20px; font-weight: 700; letter-spacing: .08em; color: var(--fg); }
+.brand-sub  { font-size: 10px; color: var(--fg3); letter-spacing: .12em; text-transform: uppercase; margin-top: 1px; }
+.status-row { display: flex; align-items: center; gap: 16px; }
+.status-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg2); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.status-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.warn   { background: var(--amber); }
+.time-display {
+  font-family: var(--font-h); font-size: 22px; font-weight: 600;
+  color: var(--gold); letter-spacing: .04em;
+}
+
+/* ── Room nav ── */
+.room-nav {
+  max-width: 880px; margin: 0 auto 16px;
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
+}
+.room-btn {
+  padding: 7px 16px; border-radius: 20px; cursor: pointer;
+  font-family: var(--font-h); font-size: 13px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--fg2); transition: all .15s;
+}
+.room-btn:hover { border-color: var(--gold-dim); color: var(--fg); }
+.room-btn.active { background: var(--gold-bg); border-color: var(--gold); color: var(--gold); }
+
+/* ── Main grid ── */
+.main-grid {
+  max-width: 880px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 12px;
+}
+
+/* ── Scene bar ── */
+.scene-bar {
+  grid-column: 1 / -1;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.scene-label { font-size: 10px; color: var(--fg3); text-transform: uppercase; letter-spacing: .1em; margin-right: 4px; }
+.scene-btn {
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  font-family: var(--font-h); font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--fg2); letter-spacing: .04em; transition: all .15s;
+}
+.scene-btn:hover { border-color: var(--gold-dim); color: var(--fg); }
+.scene-btn.active { background: var(--gold-bg); border-color: var(--gold); color: var(--gold); }
+.all-off-btn {
+  margin-left: auto; padding: 6px 16px; border-radius: 6px;
+  font-family: var(--font-h); font-size: 13px; font-weight: 700;
+  border: 1px solid var(--red); background: transparent;
+  color: var(--red); letter-spacing: .06em; cursor: pointer;
+  transition: all .15s;
+}
+.all-off-btn:hover { background: #200f0f; }
+.all-off-btn.fired { background: #200f0f; opacity: .6; }
+
+/* ── Left panel ── */
+.left-col { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px;
+}
+.card-title {
+  font-family: var(--font-h); font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--fg3);
+  margin-bottom: 14px;
+}
+
+/* ── Lighting grid ── */
+.light-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.light-zone {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px;
+}
+.light-zone-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.light-name { font-size: 12px; font-weight: 500; color: var(--fg); }
+.light-toggle {
+  width: 36px; height: 20px; border-radius: 10px; cursor: pointer;
+  background: var(--surface3); border: 1px solid var(--border);
+  position: relative; transition: background .2s;
+  flex-shrink: 0;
+}
+.light-toggle.on { background: var(--gold); border-color: var(--gold); }
+.light-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--fg3); transition: all .2s;
+}
+.light-toggle.on::after { left: 18px; background: #fff; }
+.slider-wrap { display: flex; align-items: center; gap: 8px; }
+.light-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 3px; border-radius: 2px; outline: none;
+  background: var(--border); cursor: pointer;
+  transition: opacity .2s;
+}
+.light-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--gold); cursor: pointer;
+  border: 2px solid var(--bg);
+}
+.light-slider.dim { opacity: .35; pointer-events: none; }
+.light-pct { font-size: 11px; color: var(--gold); font-variant-numeric: tabular-nums; width: 30px; text-align: right; }
+
+/* ── Thermostat ── */
+.thermo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.thermo-zone {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; text-align: center;
+}
+.thermo-name { font-size: 11px; color: var(--fg2); margin-bottom: 8px; }
+.thermo-dial {
+  font-family: var(--font-h); font-size: 36px; font-weight: 700;
+  color: var(--fg); line-height: 1; margin-bottom: 6px;
+}
+.thermo-dial span { font-size: 16px; color: var(--fg2); }
+.thermo-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.thermo-btn {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface3);
+  color: var(--fg); font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.thermo-btn:hover { border-color: var(--gold); color: var(--gold); }
+.thermo-mode {
+  display: inline-flex; gap: 4px;
+}
+.thermo-mode-btn {
+  padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface3);
+  color: var(--fg3); cursor: pointer; letter-spacing: .04em; transition: all .12s;
+}
+.thermo-mode-btn.active { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
+.thermo-mode-btn.heat.active { border-color: var(--amber); background: #1a0e00; color: var(--amber); }
+
+/* ── Right col ── */
+.right-col { display: flex; flex-direction: column; gap: 12px; }
+
+/* ── CCTV ── */
+.cctv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cam-feed {
+  aspect-ratio: 16/9; border-radius: 6px; overflow: hidden;
+  background: #060810; border: 1px solid var(--border);
+  position: relative; cursor: pointer;
+}
+.cam-feed:hover { border-color: var(--gold-dim); }
+.cam-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 5px;
+}
+.cam-label {
+  font-size: 9px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: rgba(255,255,255,.7);
+  background: rgba(0,0,0,.5); padding: 2px 5px; border-radius: 3px;
+  align-self: flex-start;
+}
+.cam-live {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 9px; font-weight: 700; color: var(--red);
+  letter-spacing: .06em;
+}
+.cam-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: blink 1.4s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* camera "scene" SVG noise */
+.cam-scene { position: absolute; inset: 0; }
+
+.cam-modal {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.85); align-items: center; justify-content: center;
+  padding: 20px;
+}
+.cam-modal.open { display: flex; }
+.cam-modal-inner {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; max-width: 560px; width: 100%;
+}
+.cam-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cam-modal-title { font-family: var(--font-h); font-size: 16px; font-weight: 700; letter-spacing: .06em; }
+.cam-close { cursor: pointer; color: var(--fg2); font-size: 20px; line-height: 1; }
+.cam-big { width: 100%; aspect-ratio: 16/9; border-radius: 8px; background: #060810; border: 1px solid var(--border); position: relative; overflow: hidden; }
+
+/* ── Quick status ── */
+.quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.qs-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.qs-label { font-size: 10px; color: var(--fg3); text-transform: uppercase; letter-spacing: .07em; }
+.qs-val   { font-family: var(--font-h); font-size: 18px; font-weight: 700; color: var(--fg); }
+.qs-val.ok     { color: var(--green); }
+.qs-val.warn   { color: var(--amber); }
+.qs-val.gold   { color: var(--gold); }
+
+/* ── Pre-session checklist ── */
+.checklist { display: flex; flex-direction: column; gap: 6px; }
+.cl-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface2);
+  transition: border-color .15s;
+}
+.cl-item.done { border-color: var(--green-dim); background: #0a1a10; }
+.cl-box {
+  width: 16px; height: 16px; border-radius: 3px;
+  border: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--green); transition: all .15s;
+}
+.cl-item.done .cl-box { background: var(--green); border-color: var(--green); color: #fff; }
+.cl-text { font-size: 11px; color: var(--fg2); flex: 1; line-height: 1.3; }
+.cl-item.done .cl-text { color: var(--fg3); text-decoration: line-through; }
+
+@media (max-width: 640px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .right-col { order: -1; }
+  .light-grid { grid-template-columns: 1fr; }
+  .thermo-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">CR</div>
+    <div>
+      <div class="brand-name">RESIDENCE CONTROL</div>
+      <div class="brand-sub">Penthouse · 5 Bedroom · Crestron TSW-770</div>
+    </div>
+  </div>
+  <div class="status-row">
+    <div class="status-item"><div class="status-dot online"></div>Processor Online</div>
+    <div class="status-item"><div class="status-dot online"></div>4 Cams</div>
+    <div class="time-display" id="clock">--:--</div>
+  </div>
+</div>
+
+<!-- Room nav -->
+<div class="room-nav">
+  <button class="room-btn active" onclick="setRoom(this,'all')">All Rooms</button>
+  <button class="room-btn" onclick="setRoom(this,'living')">Living Room</button>
+  <button class="room-btn" onclick="setRoom(this,'master')">Master Suite</button>
+  <button class="room-btn" onclick="setRoom(this,'bed2')">Bedroom 2</button>
+  <button class="room-btn" onclick="setRoom(this,'bed3')">Bedroom 3</button>
+  <button class="room-btn" onclick="setRoom(this,'kitchen')">Kitchen</button>
+  <button class="room-btn" onclick="setRoom(this,'entry')">Entry</button>
+</div>
+
+<div class="main-grid">
+
+  <!-- Scene bar -->
+  <div class="scene-bar">
+    <span class="scene-label">Scenes</span>
+    <button class="scene-btn active" onclick="setScene(this,'morning')">☀ Morning</button>
+    <button class="scene-btn" onclick="setScene(this,'day')">🌤 Day</button>
+    <button class="scene-btn" onclick="setScene(this,'evening')">🌆 Evening</button>
+    <button class="scene-btn" onclick="setScene(this,'night')">🌙 Night</button>
+    <button class="scene-btn" onclick="setScene(this,'away')">🔒 Away</button>
+    <button class="scene-btn" onclick="setScene(this,'cinema')">🎬 Cinema</button>
+    <button class="all-off-btn" id="allOffBtn" onclick="allOff()">ALL OFF</button>
+  </div>
+
+  <!-- Left: lighting + thermostat -->
+  <div class="left-col">
+
+    <div class="card">
+      <div class="card-title">Lighting Control</div>
+      <div class="light-grid" id="lightGrid">
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Living Room</div>
+            <div class="light-toggle on" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider" min="0" max="100" value="70" oninput="slideLight(this)">
+            <div class="light-pct">70%</div>
+          </div>
+        </div>
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Master Suite</div>
+            <div class="light-toggle on" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider" min="0" max="100" value="40" oninput="slideLight(this)">
+            <div class="light-pct">40%</div>
+          </div>
+        </div>
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Kitchen</div>
+            <div class="light-toggle on" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider" min="0" max="100" value="100" oninput="slideLight(this)">
+            <div class="light-pct">100%</div>
+          </div>
+        </div>
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Entry / Hall</div>
+            <div class="light-toggle on" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider" min="0" max="100" value="60" oninput="slideLight(this)">
+            <div class="light-pct">60%</div>
+          </div>
+        </div>
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Bedroom 2</div>
+            <div class="light-toggle" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider dim" min="0" max="100" value="0" oninput="slideLight(this)">
+            <div class="light-pct">0%</div>
+          </div>
+        </div>
+        <div class="light-zone">
+          <div class="light-zone-top">
+            <div class="light-name">Bedroom 3</div>
+            <div class="light-toggle" onclick="toggleLight(this)"></div>
+          </div>
+          <div class="slider-wrap">
+            <input type="range" class="light-slider dim" min="0" max="100" value="0" oninput="slideLight(this)">
+            <div class="light-pct">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Climate — 3 Zones</div>
+      <div class="thermo-grid">
+        <div class="thermo-zone">
+          <div class="thermo-name">Living / Kitchen</div>
+          <div class="thermo-dial" id="t0">72<span>°F</span></div>
+          <div class="thermo-controls">
+            <button class="thermo-btn" onclick="adjTemp(0,-1)">−</button>
+            <span style="font-size:11px;color:var(--fg3)">SET</span>
+            <button class="thermo-btn" onclick="adjTemp(0,1)">+</button>
+          </div>
+          <div class="thermo-mode">
+            <button class="thermo-mode-btn active" onclick="setMode(this)">COOL</button>
+            <button class="thermo-mode-btn heat" onclick="setMode(this)">HEAT</button>
+            <button class="thermo-mode-btn" onclick="setMode(this)">AUTO</button>
+          </div>
+        </div>
+        <div class="thermo-zone">
+          <div class="thermo-name">Master Suite</div>
+          <div class="thermo-dial" id="t1">70<span>°F</span></div>
+          <div class="thermo-controls">
+            <button class="thermo-btn" onclick="adjTemp(1,-1)">−</button>
+            <span style="font-size:11px;color:var(--fg3)">SET</span>
+            <button class="thermo-btn" onclick="adjTemp(1,1)">+</button>
+          </div>
+          <div class="thermo-mode">
+            <button class="thermo-mode-btn" onclick="setMode(this)">COOL</button>
+            <button class="thermo-mode-btn heat active" onclick="setMode(this)">HEAT</button>
+            <button class="thermo-mode-btn" onclick="setMode(this)">AUTO</button>
+          </div>
+        </div>
+        <div class="thermo-zone" style="grid-column:1/-1;display:flex;align-items:center;gap:16px;text-align:left;padding:10px 14px;">
+          <div style="flex:1">
+            <div class="thermo-name" style="margin:0 0 2px">Bedrooms 2–3</div>
+            <div class="thermo-mode" style="margin-top:6px">
+              <button class="thermo-mode-btn" onclick="setMode(this)">COOL</button>
+              <button class="thermo-mode-btn heat" onclick="setMode(this)">HEAT</button>
+              <button class="thermo-mode-btn active" onclick="setMode(this)">AUTO</button>
+            </div>
+          </div>
+          <div class="thermo-dial" id="t2" style="font-size:28px">68<span style="font-size:14px">°F</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="thermo-btn" onclick="adjTemp(2,1)">+</button>
+            <button class="thermo-btn" onclick="adjTemp(2,-1)">−</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Pre-Session Checklist — Tech Handoff</div>
+      <div class="checklist">
+        <div class="cl-item done" onclick="toggleCl(this)"><div class="cl-box">✓</div><div class="cl-text">Control processor (CP4N) powered on and reachable via Toolbox</div></div>
+        <div class="cl-item done" onclick="toggleCl(this)"><div class="cl-box">✓</div><div class="cl-text">Processor IP set static (192.168.1.10) — DHCP reservation confirmed</div></div>
+        <div class="cl-item done" onclick="toggleCl(this)"><div class="cl-box">✓</div><div class="cl-text">All keypads and dimmers physically installed and wired</div></div>
+        <div class="cl-item" onclick="toggleCl(this)"><div class="cl-box"></div><div class="cl-text">TSW-770 touch panel online, IP confirmed in Toolbox Device Discovery</div></div>
+        <div class="cl-item" onclick="toggleCl(this)"><div class="cl-box"></div><div class="cl-text">NVR online, RTSP streams accessible from laptop on same subnet</div></div>
+        <div class="cl-item" onclick="toggleCl(this)"><div class="cl-box"></div><div class="cl-text">Thermostats powered, wired to control processor, addresses set</div></div>
+        <div class="cl-item" onclick="toggleCl(this)"><div class="cl-box"></div><div class="cl-text">Site VPN credentials or TeamViewer ID shared with programmer</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: CCTV + status -->
+  <div class="right-col">
+
+    <div class="card">
+      <div class="card-title">CCTV — 4 Cameras</div>
+      <div class="cctv-grid">
+        <div class="cam-feed" onclick="openCam('Front Entrance')">
+          <svg class="cam-scene" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+            <rect width="160" height="90" fill="#060c14"/>
+            <rect x="40" y="30" width="80" height="60" fill="#0d1a26"/>
+            <rect x="55" y="45" width="20" height="45" fill="#071018"/>
+            <rect x="90" y="50" width="15" height="40" fill="#071018"/>
+            <line x1="0" y1="30" x2="160" y2="30" stroke="#1a2535" stroke-width=".5"/>
+            <circle cx="80" cy="15" r="8" fill="#1a2535"/>
+            <rect x="0" y="0" width="160" height="90" fill="url(#noise)" opacity=".08"/>
+          </svg>
+          <div class="cam-overlay">
+            <div class="cam-label">Front Entrance</div>
+            <div class="cam-live"><div class="cam-dot"></div>LIVE</div>
+          </div>
+        </div>
+        <div class="cam-feed" onclick="openCam('Lobby / Lift')">
+          <svg class="cam-scene" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+            <rect width="160" height="90" fill="#080c10"/>
+            <rect x="0" y="0" width="160" height="90" fill="#0a1020"/>
+            <rect x="20" y="10" width="120" height="80" fill="#060e18"/>
+            <rect x="65" y="20" width="30" height="70" fill="#040a12"/>
+            <line x1="65" y1="20" x2="65" y2="90" stroke="#1a2535" stroke-width=".5"/>
+            <line x1="95" y1="20" x2="95" y2="90" stroke="#1a2535" stroke-width=".5"/>
+          </svg>
+          <div class="cam-overlay">
+            <div class="cam-label">Lobby / Lift</div>
+            <div class="cam-live"><div class="cam-dot"></div>LIVE</div>
+          </div>
+        </div>
+        <div class="cam-feed" onclick="openCam('Terrace')">
+          <svg class="cam-scene" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+            <rect width="160" height="90" fill="#060a0e"/>
+            <rect x="0" y="40" width="160" height="50" fill="#040810"/>
+            <rect x="0" y="38" width="160" height="4" fill="#0d1a2a"/>
+            <rect x="0" y="0" width="160" height="40" fill="#0a1520"/>
+            <circle cx="130" cy="15" r="12" fill="#1a2a40" opacity=".6"/>
+          </svg>
+          <div class="cam-overlay">
+            <div class="cam-label">Terrace</div>
+            <div class="cam-live"><div class="cam-dot"></div>LIVE</div>
+          </div>
+        </div>
+        <div class="cam-feed" onclick="openCam('Parking Level')">
+          <svg class="cam-scene" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+            <rect width="160" height="90" fill="#050709"/>
+            <line x1="0" y1="60" x2="160" y2="60" stroke="#0e1620" stroke-width="1"/>
+            <rect x="20" y="35" width="50" height="25" rx="3" fill="#0c1520"/>
+            <rect x="90" y="38" width="55" height="22" rx="3" fill="#0c1520"/>
+            <circle cx="35" cy="60" r="5" fill="#1a2535"/>
+            <circle cx="55" cy="60" r="5" fill="#1a2535"/>
+          </svg>
+          <div class="cam-overlay">
+            <div class="cam-label">Parking Level</div>
+            <div class="cam-live"><div class="cam-dot"></div>LIVE</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--fg3);display:flex;align-items:center;gap:6px;">
+        <span style="color:var(--gold)">●</span> Tap camera to expand · RTSP via Hikvision driver · H.264 1080p
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">System Status</div>
+      <div class="quick-stats">
+        <div class="qs-item"><div class="qs-label">Lights On</div><div class="qs-val gold" id="lightsOnCount">4 / 6</div></div>
+        <div class="qs-item"><div class="qs-label">Avg Temp</div><div class="qs-val gold" id="avgTemp">70°F</div></div>
+        <div class="qs-item"><div class="qs-label">CCTV</div><div class="qs-val ok">4 Online</div></div>
+        <div class="qs-item"><div class="qs-label">Scene</div><div class="qs-val gold" id="sceneLabel">Morning</div></div>
+        <div class="qs-item"><div class="qs-label">Processor</div><div class="qs-val ok">Online</div></div>
+        <div class="qs-item"><div class="qs-label">Touch Panel</div><div class="qs-val ok">TSW-770</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Integration Map</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
+          <span style="font-size:14px">💡</span>
+          <span style="font-size:11px;color:var(--fg2);">Crestron CLWI dimmers → 6 zones, 18 keypads</span>
+          <span style="margin-left:auto;font-size:9px;color:var(--green);font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
+          <span style="font-size:14px">🌡️</span>
+          <span style="font-size:11px;color:var(--fg2);">CNXPDI thermostats → 3 zones via Cresnet</span>
+          <span style="margin-left:auto;font-size:9px;color:var(--green);font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
+          <span style="font-size:14px">📹</span>
+          <span style="font-size:11px;color:var(--fg2);">Hikvision NVR → RTSP driver → TSW-770</span>
+          <span style="margin-left:auto;font-size:9px;color:var(--green);font-weight:700;">ACTIVE</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
+          <span style="font-size:14px">🎮</span>
+          <span style="font-size:11px;color:var(--fg2);">TSR-310 remote → lighting + climate + CCTV</span>
+          <span style="margin-left:auto;font-size:9px;color:var(--green);font-weight:700;">ACTIVE</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Cam modal -->
+<div class="cam-modal" id="camModal" onclick="if(event.target===this)closeCam()">
+  <div class="cam-modal-inner">
+    <div class="cam-modal-header">
+      <div class="cam-modal-title" id="camModalTitle">Camera</div>
+      <div class="cam-close" onclick="closeCam()">✕</div>
+    </div>
+    <div class="cam-big">
+      <svg viewBox="0 0 560 315" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+        <rect width="560" height="315" fill="#060c14"/>
+        <rect x="100" y="80" width="360" height="235" fill="#0d1a26" rx="4"/>
+        <rect x="180" y="130" width="80" height="185" fill="#071018"/>
+        <rect x="300" y="145" width="60" height="170" fill="#071018"/>
+        <text x="280" y="50" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#3d4a58">RTSP 1080p · H.264 · 25fps</text>
+        <rect x="8" y="8" width="60" height="16" rx="3" fill="rgba(0,0,0,.6)"/>
+        <text x="38" y="19" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#ef4444" font-weight="700">● LIVE</text>
+      </svg>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <div style="flex:1;text-align:center;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--fg2);">1080p · 25fps</div>
+      <div style="flex:1;text-align:center;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--fg2);">H.264 Main</div>
+      <div style="flex:1;text-align:center;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);font-size:11px;color:var(--green);">No Motion</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Clock
+function updateClock() {
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+updateClock(); setInterval(updateClock, 10000);
+
+// Room filter (visual only)
+function setRoom(btn, room) {
+  document.querySelectorAll('.room-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Scene presets
+const scenes = {
+  morning: [70,40,100,60,0,0],
+  day:     [100,60,100,80,40,40],
+  evening: [50,30,60,40,0,0],
+  night:   [10,20,0,20,0,0],
+  away:    [0,0,0,30,0,0],
+  cinema:  [10,0,0,0,0,0],
+};
+const sceneNames = { morning:'Morning', day:'Day', evening:'Evening', night:'Night', away:'Away', cinema:'Cinema' };
+
+function setScene(btn, name) {
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sceneLabel').textContent = sceneNames[name];
+  const vals = scenes[name];
+  const zones = document.querySelectorAll('.light-zone');
+  zones.forEach((z, i) => {
+    const v = vals[i] ?? 0;
+    const toggle = z.querySelector('.light-toggle');
+    const slider = z.querySelector('.light-slider');
+    const pct    = z.querySelector('.light-pct');
+    slider.value = v;
+    pct.textContent = v + '%';
+    if (v > 0) {
+      toggle.classList.add('on');
+      slider.classList.remove('dim');
+    } else {
+      toggle.classList.remove('on');
+      slider.classList.add('dim');
+    }
+  });
+  updateLightsCount();
+  document.getElementById('allOffBtn').classList.remove('fired');
+}
+
+function allOff() {
+  document.querySelectorAll('.light-toggle').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.light-slider').forEach(s => { s.value=0; s.classList.add('dim'); });
+  document.querySelectorAll('.light-pct').forEach(p => p.textContent='0%');
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('allOffBtn').classList.add('fired');
+  document.getElementById('lightsOnCount').textContent = '0 / 6';
+  document.getElementById('sceneLabel').textContent = 'Off';
+}
+
+function toggleLight(toggle) {
+  toggle.classList.toggle('on');
+  const slider = toggle.closest('.light-zone').querySelector('.light-slider');
+  const pct    = toggle.closest('.light-zone').querySelector('.light-pct');
+  if (toggle.classList.contains('on')) {
+    slider.classList.remove('dim');
+    if (parseInt(slider.value) === 0) { slider.value = 80; pct.textContent = '80%'; }
+  } else {
+    slider.classList.add('dim');
+    pct.textContent = '0%';
+  }
+  updateLightsCount();
+}
+
+function slideLight(slider) {
+  const zone   = slider.closest('.light-zone');
+  const toggle = zone.querySelector('.light-toggle');
+  const pct    = zone.querySelector('.light-pct');
+  const v = parseInt(slider.value);
+  pct.textContent = v + '%';
+  if (v > 0) { toggle.classList.add('on'); slider.classList.remove('dim'); }
+  else        { toggle.classList.remove('on'); slider.classList.add('dim'); }
+  updateLightsCount();
+}
+
+function updateLightsCount() {
+  const on = document.querySelectorAll('.light-toggle.on').length;
+  document.getElementById('lightsOnCount').textContent = on + ' / 6';
+}
+
+// Thermostat
+const temps = [72, 70, 68];
+function adjTemp(zone, delta) {
+  temps[zone] = Math.max(60, Math.min(85, temps[zone] + delta));
+  document.getElementById('t' + zone).innerHTML = temps[zone] + '<span>°F</span>';
+  const avg = Math.round(temps.reduce((a,b)=>a+b,0)/temps.length);
+  document.getElementById('avgTemp').textContent = avg + '°F';
+}
+function setMode(btn) {
+  btn.closest('.thermo-mode').querySelectorAll('.thermo-mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// CCTV modal
+function openCam(name) {
+  document.getElementById('camModalTitle').textContent = name;
+  document.getElementById('camModal').classList.add('open');
+}
+function closeCam() { document.getElementById('camModal').classList.remove('open'); }
+
+// Checklist
+function toggleCl(el) {
+  el.classList.toggle('done');
+  const box = el.querySelector('.cl-box');
+  box.textContent = el.classList.contains('done') ? '✓' : '';
+}
+</script>
